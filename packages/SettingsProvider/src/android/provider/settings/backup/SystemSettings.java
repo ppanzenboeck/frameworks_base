@@ -125,7 +125,8 @@ public class SystemSettings {
                 Settings.System.NOTIFICATION_VIBRATION_PATTERN,
                 Settings.System.CUSTOM_NOTIFICATION_VIBRATION_PATTERN,
                 Settings.System.BACK_GESTURE_HEIGHT,
-                Settings.System.SENSOR_BLOCK
+                Settings.System.SENSOR_BLOCK,
+                Settings.System.NAVBAR_LONG_PRESS_GESTURE
         ));
         if (Flags.backUpSmoothDisplayAndForcePeakRefreshRate()) {
             settings.add(Settings.System.PEAK_REFRESH_RATE);
