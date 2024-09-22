@@ -82,9 +82,7 @@ public class NotificationUtils {
     };
 
     public void showNowPlayingNotification(MediaMetadata metadata) {
-        Bitmap albumArtwork = metadata.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART);
-	Bitmap mediaArt = metadata.getBitmap(MediaMetadata.METADATA_KEY_ART);
-        Bitmap albumArt = (albumArtwork != null) ? albumArtwork : mediaArt;
+        Bitmap albumArt = metadata.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART);
         String title = metadata.getString(MediaMetadata.METADATA_KEY_TITLE);
         String artist = metadata.getString(MediaMetadata.METADATA_KEY_ARTIST);
         if (title == null || artist == null) return;
