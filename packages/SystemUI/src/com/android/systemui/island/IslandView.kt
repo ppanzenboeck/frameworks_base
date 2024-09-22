@@ -295,13 +295,6 @@ class IslandView : ExtendedFloatingActionButton {
         return "$notifTitleContent$splitter$filteredContent"
     }
 
-    fun getApplicationInfo(sbn: StatusBarNotification): ApplicationInfo {
-        return context.packageManager.getApplicationInfoAsUser(
-                sbn.packageName,
-                PackageManager.ApplicationInfoFlags.of(PackageManager.GET_META_DATA.toLong()),
-                sbn.getUser().getIdentifier())
-    }
-
     fun getAppLabel(packageName: String, context: Context): String {
         val packageManager = context.packageManager
         return try {
@@ -346,11 +339,17 @@ class IslandView : ExtendedFloatingActionButton {
 
     private fun getNotificationIcon(sbn: StatusBarNotification, notification: Notification): Drawable? {
         return try {
-            if ("com.android.systemui" == sbn?.packageName) {
+            val pkgname = sbn?.packageName
+            val uid = sbn?.getUser().getIdentifier()
+            val appInfo: ApplicationInfo = context.packageManager.getApplicationInfoAsUser(
+                    pkgname,
+                    PackageManager.ApplicationInfoFlags.of(PackageManager.GET_META_DATA.toLong()),
+                    uid)
+            if ("com.android.systemui" == pkgname) {
                 context.getDrawable(notification.icon)
             } else {
                 val iconFactory: IconDrawableFactory = IconDrawableFactory.newInstance(context)
-                iconFactory.getBadgedIcon(getApplicationInfo(sbn), sbn.getUser().getIdentifier())
+                iconFactory.getBadgedIcon(appInfo, uid)
             }
         } catch (e: PackageManager.NameNotFoundException) {
             null
