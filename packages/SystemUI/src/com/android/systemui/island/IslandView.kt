@@ -228,14 +228,17 @@ class IslandView : ExtendedFloatingActionButton {
     private fun prepareIslandContent() {
         val sbn = headsUpManager?.getTopEntry()?.row?.entry?.sbn ?: return
         val notification = sbn.notification
-        val (islandTitle, islandText) = resolveNotificationContent(notification)
+        val extraTitle = notification.extras.getCharSequence(Notification.EXTRA_TITLE)?.toString().orEmpty()
+        val extraText = notification.extras.getCharSequence(Notification.EXTRA_TEXT)?.toString().orEmpty()
+        val (islandTitle, islandText) = prepareNotificationContent(extraTitle, extraText)
         val iconDrawable = sequenceOf(
             Notification.EXTRA_CONVERSATION_ICON,
             Notification.EXTRA_LARGE_ICON_BIG,
             Notification.EXTRA_LARGE_ICON,
             Notification.EXTRA_SMALL_ICON
-        ).mapNotNull { key -> getDrawableFromExtras(notification.extras, key, context) }
-         .firstOrNull() ?: getNotificationIcon(sbn, notification) ?: return
+        ).map { key -> getDrawableFromExtras(notification.extras, key, context) }
+         .firstOrNull { it != null }
+         ?: getNotificationIcon(sbn, notification) ?: return
         val appLabel = getAppLabel(getActiveAppVolumePackage(), context)
         isNowPlaying = sbn?.packageName == "com.android.systemui" &&
                        islandTitle.toLowerCase(Locale.ENGLISH).equals(
@@ -250,12 +253,11 @@ class IslandView : ExtendedFloatingActionButton {
                 islandTitle.takeIf { it.isNotBlank() } ?: return // normal apps
             }
         }
-        notifContent = if (isNowPlaying) {
-            "" // No content for now playing notifications
-        } else {
-            islandText.takeIf { it.isNotBlank() } ?: "" // Normal apps
+        notifContent = when {
+            isNowPlaying -> { "" }
+            else -> { islandText.takeIf { it.isNotBlank() } ?: "" } // normal apps
         }
-        notifSubContent = if (isNowPlaying) "" else notification.extras.getCharSequence(Notification.EXTRA_SUB_TEXT)?.toString().orEmpty()
+        notifSubContent = notification.extras.getCharSequence(Notification.EXTRA_SUB_TEXT)?.toString().orEmpty()
         titleSpannable = SpannableString(notifTitle.ifEmpty { notifContent }).apply {
             setSpan(StyleSpan(Typeface.BOLD), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
@@ -265,19 +267,13 @@ class IslandView : ExtendedFloatingActionButton {
         this.icon = roundedIcon
         this.iconTint = null
         this.bringToFront()
-        notifPackage = if (isNowPlaying) getActiveAppVolumePackage() else sbn.packageName
+        if (isNowPlaying) {
+            notifPackage = getActiveAppVolumePackage()
+            notifSubContent = ""
+        } else {
+            notifPackage = sbn.packageName
+        }
         setOnTouchListener(sbn.notification.contentIntent ?: return, notifPackage)
-    }
-
-    private fun resolveNotificationContent(notification: Notification): Pair<String, String> {
-        val titleText = notification.extras.getCharSequence(Notification.EXTRA_CONVERSATION_TITLE)
-            ?: notification.extras.getCharSequence(Notification.EXTRA_TITLE)
-            ?: notification.extras.getCharSequence(Notification.EXTRA_TITLE_BIG)
-            ?: ""
-        val contentText = notification.extras.getCharSequence(Notification.EXTRA_TEXT)
-            ?: notification.extras.getCharSequence(Notification.EXTRA_BIG_TEXT)
-            ?: ""
-        return titleText.toString() to contentText.toString()
     }
 
     fun prepareNotificationContent(title: String, content: String): Pair<String, String> {
