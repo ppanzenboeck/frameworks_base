@@ -1447,6 +1447,12 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
         }
         return view;
     }
+    
+    void updateIslandBackground() {
+        boolean nightMode = (mView.getContext().getResources().getConfiguration().uiMode
+                & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
+        mNotifIsland.setIslandBackgroundColorTint(nightMode);
+    }
 
     @VisibleForTesting
     void reInflateViews() {
@@ -4522,14 +4528,14 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
         public void onThemeChanged() {
             debugLog("onThemeChanged");
             reInflateViews();
-            mNotifIsland.setIslandBackgroundColorTint();
+            updateIslandBackground();
         }
 
         @Override
         public void onUiModeChanged() {
             if (DEBUG_LOGCAT) Log.d(TAG, "onUiModeChanged");
             resetViews(true);
-            mNotifIsland.setIslandBackgroundColorTint();
+            updateIslandBackground();
         }
 
         @Override

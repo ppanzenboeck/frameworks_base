@@ -217,10 +217,12 @@ class IslandView : ExtendedFloatingActionButton {
         isTouchInsetsRemoved = true
     }
 
-    fun setIslandBackgroundColorTint() {
-        this.backgroundTintList = ColorStateList.valueOf(context.getColor(R.color.island_background_color))
-        setTextColor(ColorStateList.valueOf(context.getColor(R.color.island_title_color)))
-        subtitleColor = context.getColor(R.color.island_subtitle_color)
+    fun setIslandBackgroundColorTint(dark: Boolean) {
+        val darkColor = context.getColor(R.color.island_background_color_dark)
+        val lightColor = context.getColor(R.color.island_background_color_light)
+        this.backgroundTintList = ColorStateList.valueOf(if (dark) darkColor else lightColor)
+        setTextColor(ColorStateList.valueOf(if (dark) lightColor else darkColor))
+        subtitleColor = Color.parseColor(if (dark) "#89ffffff" else "#66000000")
     }
 
     private fun prepareIslandContent() {
