@@ -131,9 +131,6 @@ interface ShadeViewController {
      */
     fun showAodUi()
 
-    /** island visibility  */
-    fun showIsland(show: Boolean)
-
     fun getScrollerLayoutController(): NotificationStackScrollLayoutController?
 
     fun getKeyguardBottomAreaView(): KeyguardBottomAreaView?

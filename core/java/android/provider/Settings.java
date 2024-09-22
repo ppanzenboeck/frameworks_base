@@ -7472,10 +7472,6 @@ public final class Settings {
          * the setting value. See an example above.
          */
 
-        /**
-         * @hide
-         */
-        public static final String ISLAND_NOTIFICATION = "island_notification";
 
         /**
          * Whether to enable the pixel navbar animation

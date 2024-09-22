@@ -91,8 +91,6 @@ class ShadeViewControllerEmptyImpl @Inject constructor() :
 
     override fun setBlockedGesturalNavigation(blocked: Boolean) {}
 
-    override fun showIsland(show: Boolean) {}
-
     override fun getScrollerLayoutController(): NotificationStackScrollLayoutController? = null
     override fun getKeyguardBottomAreaView(): KeyguardBottomAreaView? = null
 }
