@@ -21,6 +21,7 @@ import android.app.ActivityTaskManager
 import android.app.ActivityOptions
 import android.app.Notification
 import android.app.PendingIntent
+import android.app.TaskStackListener
 import android.content.pm.ApplicationInfo
 import android.content.Context
 import android.content.Intent
@@ -66,8 +67,6 @@ import android.view.ViewTreeObserver
 import androidx.transition.AutoTransition
 import androidx.transition.TransitionManager
 import com.android.systemui.res.R
-import com.android.systemui.shared.system.TaskStackChangeListener
-import com.android.systemui.shared.system.TaskStackChangeListeners
 import com.android.systemui.statusbar.policy.HeadsUpManager
 import com.android.systemui.statusbar.notification.stack.NotificationStackScrollLayout
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
@@ -76,9 +75,6 @@ import com.android.settingslib.drawable.CircleFramedDrawable
 
 import kotlin.math.abs
 import kotlin.text.Regex
-import java.util.concurrent.Executors
-import java.util.concurrent.Executor
-import java.util.concurrent.RejectedExecutionException
 import java.util.Locale
 
 class IslandView : ExtendedFloatingActionButton {
@@ -93,7 +89,6 @@ class IslandView : ExtendedFloatingActionButton {
     private var notifContent: String = ""
     private var notifSubContent: String = ""
     private var notifPackage: String = ""
-    private var topActivityPackage: String = ""
 
     private var isIslandAnimating = false
     private var isDismissed = true
@@ -109,18 +104,6 @@ class IslandView : ExtendedFloatingActionButton {
 
     private var telecomManager: TelecomManager? = null
     private var vibrator: Vibrator? = null
-
-    private val bgExecutor: Executor = Executors.newSingleThreadExecutor()
-
-    private val taskStackChangeListener = object : TaskStackChangeListener {
-        override fun onTaskStackChanged() {
-            try {
-                bgExecutor.execute {
-                    updateForegroundTaskSync()
-                }
-            } catch (e: RejectedExecutionException) {}
-        }
-    }
 
     private val insetsListener = ViewTreeObserver.OnComputeInternalInsetsListener { internalInsetsInfo ->
         internalInsetsInfo.touchableRegion.setEmpty()
@@ -141,23 +124,10 @@ class IslandView : ExtendedFloatingActionButton {
 
     constructor(context: Context, attrs: AttributeSet, defStyleAttr: Int) : super(context, attrs, defStyleAttr) { init(context) }
 
-    override fun onDetachedFromWindow() {
-        super.onDetachedFromWindow()
-        TaskStackChangeListeners.getInstance().unregisterTaskStackListener(taskStackChangeListener)
-    }
-    
-    private fun updateForegroundTaskSync() {
-        try {
-            val focusedStack = ActivityTaskManager.getService().getFocusedRootTaskInfo()
-            topActivityPackage = focusedStack?.topActivity?.packageName ?: ""
-        } catch (e: Exception) {}
-    }
-
     fun init(context: Context) {
         this.visibility = View.GONE
         telecomManager = context.getSystemService(Context.TELECOM_SERVICE) as TelecomManager
         vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-        TaskStackChangeListeners.getInstance().registerTaskStackListener(taskStackChangeListener)
     }
 
     fun setScroller(scroller: NotificationStackScrollLayout?) {
@@ -626,11 +596,37 @@ class IslandView : ExtendedFloatingActionButton {
     }
 
     private fun shouldShowIslandNotification(): Boolean {
-        return !isCurrentNotifActivityOnTop(notifPackage) or !isCurrentNotifActivityOnTop(getActiveAppVolumePackage())
+        var shouldShowNotification = !isCurrentNotifActivityOnTop(notifPackage) or !isCurrentNotifActivityOnTop(getActiveAppVolumePackage())
+        val taskStackListener = object : TaskStackListener() {
+            override fun onTaskStackChanged() {
+                shouldShowNotification = !isCurrentNotifActivityOnTop(notifPackage) or !isCurrentNotifActivityOnTop(getActiveAppVolumePackage())
+            }
+        }
+        if (!isStackRegistered) {
+            try {
+                ActivityTaskManager.getService().registerTaskStackListener(taskStackListener)
+                isStackRegistered = true
+            } catch (e: Exception) {
+                isStackRegistered = false
+            }
+        }
+        if (shouldShowNotification && isStackRegistered) {
+            try {
+                ActivityTaskManager.getService().unregisterTaskStackListener(taskStackListener)
+                isStackRegistered = false
+            } catch (e: Exception) {
+                isStackRegistered = true
+            }
+        }
+        return shouldShowNotification
     }
 
     fun isCurrentNotifActivityOnTop(packageName: String): Boolean {
-        return topActivityPackage.isNotEmpty() && topActivityPackage == packageName
+        try {
+            val focusedTaskInfo = ActivityTaskManager.getService().getFocusedRootTaskInfo()
+            val topActivityPackageName = focusedTaskInfo?.topActivity?.packageName
+            return topActivityPackageName == packageName
+        } catch (e: Exception) {}
+        return false
     }
-
 }
