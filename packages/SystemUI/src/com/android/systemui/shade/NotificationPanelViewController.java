@@ -5432,7 +5432,6 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
             return super.performAccessibilityAction(host, action, args);
         }
     }
-}
 
 
     @Override
